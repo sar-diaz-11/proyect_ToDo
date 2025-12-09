@@ -3,7 +3,7 @@ import axios from 'axios';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://proyect-todo.onrender.com';
 
 axios.get(`${API_URL}/tasks`)
 
