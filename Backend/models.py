@@ -55,11 +55,5 @@ class UserResponse(BaseModel):
     id: int
     email: str
     username: str
-    created_at: datetime  # Ahora FastAPI podrá serializarlo correctamente
+    created_at: str  # ⚠️ Cambiado a str
     token: str
-    
-    class Config:
-        # Esto le dice a Pydantic cómo convertir datetime a JSON
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }

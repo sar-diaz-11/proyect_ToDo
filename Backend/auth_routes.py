@@ -40,6 +40,16 @@ def verify_token(token: str) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+def format_datetime(dt):
+    """Convierte datetime a string ISO de forma segura"""
+    if dt is None:
+        return datetime.utcnow().isoformat()
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    if isinstance(dt, str):
+        return dt
+    return str(dt)
+
 def register_user_route(user: UserCreate) -> UserResponse:
     """Registra un nuevo usuario"""
     try:
@@ -84,7 +94,7 @@ def register_user_route(user: UserCreate) -> UserResponse:
             id=new_user['id'],
             email=new_user['email'],
             username=new_user['username'],
-            created_at=new_user['created_at'].isoformat() if isinstance(new_user['created_at'], datetime) else str(new_user['created_at']),
+            created_at=format_datetime(new_user.get('created_at')),  # ⚠️ Conversión segura
             token=token
         )
     except HTTPException:
@@ -114,7 +124,7 @@ def login_user_route(user: UserLogin) -> UserResponse:
             id=db_user['id'],
             email=db_user['email'],
             username=db_user['username'],
-            created_at=db_user['created_at'].isoformat() if isinstance(db_user['created_at'], datetime) else str(db_user['created_at']),
+            created_at=format_datetime(db_user.get('created_at')),  # ⚠️ Conversión segura
             token=token
         )
     except HTTPException:
@@ -140,7 +150,7 @@ def verify_user_token_route(token: str) -> dict:
             "id": user['id'],
             "email": user['email'],
             "username": user['username'],
-            "created_at": user['created_at']
+            "created_at": format_datetime(user.get('created_at'))
         }
     except HTTPException:
         raise
