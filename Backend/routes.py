@@ -4,13 +4,13 @@ from models import Task, TaskCreate, TaskUpdate
 from database import get_db_connection
 from mysql.connector import Error
 
-def get_tasks_route(completed: Optional[bool] = None, priority: Optional[str] = None) -> List[Task]:
+def get_tasks_route(user_id: int, completed: Optional[bool] = None, priority: Optional[str] = None) -> List[Task]:
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
-        query = "SELECT * FROM tasks WHERE 1=1"
-        params = []
+        query = "SELECT * FROM tasks WHERE user_id = %s"
+        params = [user_id]
         
         if completed is not None:
             query += " AND completed = %s"
@@ -30,17 +30,17 @@ def get_tasks_route(completed: Optional[bool] = None, priority: Optional[str] = 
     except Error as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def create_task_route(task: TaskCreate) -> Task:
+def create_task_route(user_id: int, task: TaskCreate) -> Task:
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute(
-            "INSERT INTO tasks (title, description, priority, due_date) VALUES (%s, %s, %s, %s)",
-            (task.title, task.description, task.priority, task.due_date)
+            "INSERT INTO tasks (user_id, title, description, priority, due_date) VALUES (%s, %s, %s, %s, %s)",
+            (user_id, task.title, task.description, task.priority, task.due_date)
         )
         connection.commit()
         task_id = cursor.lastrowid
-        cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
+        cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
         new_task = cursor.fetchone()
         cursor.close()
         connection.close()
@@ -48,11 +48,11 @@ def create_task_route(task: TaskCreate) -> Task:
     except Error as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_task_route(task_id: int) -> Task:
+def get_task_route(user_id: int, task_id: int) -> Task:
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
+        cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
         task = cursor.fetchone()
         cursor.close()
         connection.close()
@@ -63,7 +63,7 @@ def get_task_route(task_id: int) -> Task:
     except Error as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def update_task_route(task_id: int, task: TaskUpdate) -> Task:
+def update_task_route(user_id: int, task_id: int, task: TaskUpdate) -> Task:
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
@@ -90,11 +90,12 @@ def update_task_route(task_id: int, task: TaskUpdate) -> Task:
             raise HTTPException(status_code=400, detail="No hay campos para actualizar")
         
         values.append(task_id)
-        query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = %s"
+        values.append(user_id)
+        query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = %s AND user_id = %s"
         cursor.execute(query, values)
         connection.commit()
         
-        cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
+        cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
         updated_task = cursor.fetchone()
         cursor.close()
         connection.close()
@@ -105,11 +106,11 @@ def update_task_route(task_id: int, task: TaskUpdate) -> Task:
     except Error as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def delete_task_route(task_id: int):
+def delete_task_route(user_id: int, task_id: int):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
+        cursor.execute("DELETE FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
         connection.commit()
         
         if cursor.rowcount == 0:
