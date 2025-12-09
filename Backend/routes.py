@@ -4,6 +4,12 @@ from database import get_db_connection
 from mysql.connector import Error
 from typing import List, Optional
 from datetime import datetime
+import logging
+import traceback
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def format_datetime(dt):
     """Convierte datetime a string ISO de forma segura"""
@@ -18,6 +24,7 @@ def format_datetime(dt):
 def get_tasks_route(user_id: int, completed: Optional[bool] = None, priority: Optional[str] = None) -> List[Task]:
     """Obtiene todas las tareas del usuario con filtros opcionales"""
     try:
+        logger.info(f"📋 Obteniendo tareas para user_id: {user_id}")
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
@@ -34,23 +41,30 @@ def get_tasks_route(user_id: int, completed: Optional[bool] = None, priority: Op
         
         query += " ORDER BY created_at DESC"
         
+        logger.info(f"Query: {query}, Params: {params}")
         cursor.execute(query, tuple(params))
         tasks = cursor.fetchall()
+        logger.info(f"✅ Tareas encontradas: {len(tasks)}")
+        
         cursor.close()
         connection.close()
         
         # Convertir datetime a string
         for task in tasks:
+            logger.info(f"Procesando tarea ID: {task.get('id')}")
             task['created_at'] = format_datetime(task.get('created_at'))
             task['updated_at'] = format_datetime(task.get('updated_at'))
         
         return [Task(**task) for task in tasks]
-    except Error as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Error en get_tasks_route: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error al obtener tareas: {str(e)}")
 
 def create_task_route(user_id: int, task: TaskCreate) -> Task:
     """Crea una nueva tarea"""
     try:
+        logger.info(f"📝 Creando tarea para user_id: {user_id}, título: {task.title}")
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
@@ -61,9 +75,12 @@ def create_task_route(user_id: int, task: TaskCreate) -> Task:
         )
         connection.commit()
         task_id = cursor.lastrowid
+        logger.info(f"✅ Tarea creada con ID: {task_id}")
         
         cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
         new_task = cursor.fetchone()
+        logger.info(f"Tarea recuperada: {new_task}")
+        
         cursor.close()
         connection.close()
         
@@ -71,13 +88,17 @@ def create_task_route(user_id: int, task: TaskCreate) -> Task:
         new_task['created_at'] = format_datetime(new_task.get('created_at'))
         new_task['updated_at'] = format_datetime(new_task.get('updated_at'))
         
+        logger.info(f"Tarea formateada: {new_task}")
         return Task(**new_task)
-    except Error as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Error en create_task_route: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error al crear tarea: {str(e)}")
 
 def get_task_route(user_id: int, task_id: int) -> Task:
     """Obtiene una tarea específica"""
     try:
+        logger.info(f"🔍 Buscando tarea {task_id} para user_id: {user_id}")
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
@@ -93,15 +114,19 @@ def get_task_route(user_id: int, task_id: int) -> Task:
         task['created_at'] = format_datetime(task.get('created_at'))
         task['updated_at'] = format_datetime(task.get('updated_at'))
         
+        logger.info(f"✅ Tarea encontrada: {task}")
         return Task(**task)
     except HTTPException:
         raise
-    except Error as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Error en get_task_route: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error al obtener tarea: {str(e)}")
 
 def update_task_route(user_id: int, task_id: int, task: TaskUpdate) -> Task:
     """Actualiza una tarea existente"""
     try:
+        logger.info(f"✏️ Actualizando tarea {task_id} para user_id: {user_id}")
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
@@ -156,15 +181,19 @@ def update_task_route(user_id: int, task_id: int, task: TaskUpdate) -> Task:
         updated_task['created_at'] = format_datetime(updated_task.get('created_at'))
         updated_task['updated_at'] = format_datetime(updated_task.get('updated_at'))
         
+        logger.info(f"✅ Tarea actualizada: {updated_task}")
         return Task(**updated_task)
     except HTTPException:
         raise
-    except Error as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Error en update_task_route: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error al actualizar tarea: {str(e)}")
 
 def delete_task_route(user_id: int, task_id: int) -> dict:
     """Elimina una tarea"""
     try:
+        logger.info(f"🗑️ Eliminando tarea {task_id} para user_id: {user_id}")
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         
@@ -182,8 +211,11 @@ def delete_task_route(user_id: int, task_id: int) -> dict:
         cursor.close()
         connection.close()
         
+        logger.info(f"✅ Tarea eliminada exitosamente")
         return {"message": "Tarea eliminada exitosamente"}
     except HTTPException:
         raise
-    except Error as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Error en delete_task_route: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error al eliminar tarea: {str(e)}")
