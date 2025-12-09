@@ -74,6 +74,7 @@ git clone [https://github.com/tu-usuario/proyect_todo.git](https://github.com/tu
 cd proyect_todo/Backend
 
 Crear entorno virtual
+
 bash
 python -m venv venv
 venv\Scripts\activate  # Windows
@@ -167,6 +168,7 @@ VITE_API_URL=https://tu-backend.onrender.com
 Las contribuciones son bienvenidas. Por favor:
 
 Fork el proyecto
+
 Crea una rama para tu feature (git checkout -b feature/AmazingFeature)
 Commit tus cambios (git commit -m 'Add some AmazingFeature')
 Push a la rama (git push origin feature/AmazingFeature)

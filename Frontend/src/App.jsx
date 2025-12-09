@@ -5,8 +5,6 @@ import TaskList from './components/TaskList';
 
 const API_URL = 'https://proyect-todo.onrender.com';
 
-axios.get(`${API_URL}/tasks`)
-
 function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
