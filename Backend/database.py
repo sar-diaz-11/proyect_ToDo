@@ -4,15 +4,18 @@ from config import DB_CONFIG
 
 def get_db_connection():
     try:
-        # Debug: Imprimir la configuración
-        print(f"Intentando conectar con: {DB_CONFIG}")
-        print(f"Tipo de puerto: {type(DB_CONFIG['port'])}")
+        db_config = {
+            "host": DB_CONFIG["host"],
+            "user": DB_CONFIG["user"],
+            "password": DB_CONFIG["password"],
+            "database": DB_CONFIG["database"],
+            "port": int(DB_CONFIG["port"]) if isinstance(DB_CONFIG["port"], str) else DB_CONFIG["port"]
+        }
         
-        # Asegurar que el puerto sea int
-        db_config = DB_CONFIG.copy()
-        db_config['port'] = int(db_config['port'])
+        print(f"DEBUG - Conectando con host: {db_config['host']}, port: {db_config['port']} (tipo: {type(db_config['port'])})")
         
         connection = mysql.connector.connect(**db_config)
+        print("Conexión exitosa a la BD")
         return connection
     except Error as e:
         print(f"Error al conectar a la BD: {e}")
