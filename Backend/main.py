@@ -15,7 +15,11 @@ app = FastAPI(title="Todo API")
 # Configurar CORS para React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://effulgent-praline-3c31f9.netlify.app", "http://localhost:5173"],
+    allow_origins=[
+        "https://effulgent-praline-3c31f9.netlify.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
