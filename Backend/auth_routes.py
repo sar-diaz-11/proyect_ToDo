@@ -84,7 +84,7 @@ def register_user_route(user: UserCreate) -> UserResponse:
             id=new_user['id'],
             email=new_user['email'],
             username=new_user['username'],
-            created_at=new_user['created_at'],
+            created_at=new_user['created_at'].isoformat() if isinstance(new_user['created_at'], datetime) else str(new_user['created_at']),
             token=token
         )
     except HTTPException:
@@ -114,7 +114,7 @@ def login_user_route(user: UserLogin) -> UserResponse:
             id=db_user['id'],
             email=db_user['email'],
             username=db_user['username'],
-            created_at=db_user['created_at'],
+            created_at=db_user['created_at'].isoformat() if isinstance(db_user['created_at'], datetime) else str(db_user['created_at']),
             token=token
         )
     except HTTPException:

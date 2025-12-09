@@ -15,10 +15,15 @@ from auth_routes import (
     verify_token as verify_jwt_token
 )
 from typing import List, Optional
+import logging
 
-app = FastAPI(title="Todo API")  # ← Primero se define app
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Configurar CORS para React
+app = FastAPI(title="Todo API")
+
+# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -46,7 +51,8 @@ def get_user_id_from_token(authorization: Optional[str] = Header(None)) -> int:
         return payload.get("user_id")
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error al verificar token: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
 @app.get("/tasks", response_model=List[Task])
@@ -78,12 +84,42 @@ def delete_task(task_id: int, authorization: Optional[str] = Header(None)):
 
 @app.post("/auth/register", response_model=UserResponse)
 def register(user: UserCreate):
-    return register_user_route(user)
+    try:
+        logger.info(f"📨 Intento de registro para: {user.email}")
+        result = register_user_route(user)
+        logger.info(f"✅ Usuario registrado exitosamente: ID {result.id}")
+        return result
+    except HTTPException as e:
+        logger.error(f"❌ HTTPException en registro: {e.status_code} - {e.detail}")
+        raise e
+    except Exception as e:
+        logger.error(f"❌ Error inesperado en registro: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @app.post("/auth/login", response_model=UserResponse)
 def login(user: UserLogin):
-    return login_user_route(user)
+    try:
+        logger.info(f"📨 Intento de login para: {user.email}")
+        result = login_user_route(user)
+        logger.info(f"✅ Login exitoso: {user.email}")
+        return result
+    except HTTPException as e:
+        logger.error(f"❌ HTTPException en login: {e.status_code} - {e.detail}")
+        raise e
+    except Exception as e:
+        logger.error(f"❌ Error inesperado en login: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @app.post("/auth/verify")
 def verify_user_token_endpoint(token: str):
-    return verify_user_token_route(token)
+    try:
+        return verify_user_token_route(token)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"❌ Error en verificación de token: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
