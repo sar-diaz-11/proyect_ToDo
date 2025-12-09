@@ -5,6 +5,8 @@ import TaskList from './components/TaskList';
 
 const API_URL = 'http://localhost:8000';
 
+axios.get(`${API_URL}/tasks`)
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
