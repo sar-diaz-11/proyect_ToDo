@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from datetime import datetime
 from typing import Optional
 
 class Task(BaseModel):
@@ -10,13 +9,8 @@ class Task(BaseModel):
     completed: bool = False
     priority: str = "medium"
     due_date: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    created_at: str  # ⚠️ Cambiado de datetime a str
+    updated_at: str  # ⚠️ Cambiado de datetime a str
 
 class TaskCreate(BaseModel):
     title: str
@@ -35,12 +29,7 @@ class User(BaseModel):
     id: int
     email: str
     username: str
-    created_at: datetime
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    created_at: str  # ⚠️ Cambiado de datetime a str
 
 class UserCreate(BaseModel):
     email: str
@@ -55,5 +44,5 @@ class UserResponse(BaseModel):
     id: int
     email: str
     username: str
-    created_at: str  # ⚠️ Cambiado a str
+    created_at: str
     token: str
