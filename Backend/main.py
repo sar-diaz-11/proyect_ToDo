@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models import Task, TaskCreate, TaskUpdate, UserCreate, UserLogin, UserResponse
 from routes import (
     get_tasks_route,
@@ -36,48 +37,76 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configurar seguridad Bearer
+security = HTTPBearer()
+
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido a la API de ToDo"}
 
-def get_user_id_from_token(authorization: Optional[str] = Header(None)) -> int:
+def get_user_id_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
     """Extrae el user_id del token JWT del header Authorization"""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Token no proporcionado")
-    
     try:
-        token = authorization.replace("Bearer ", "")
+        token = credentials.credentials
         payload = verify_jwt_token(token)
-        return payload.get("user_id")
+        user_id = payload.get("user_id")
+        
+        if not user_id:
+            logger.error("Token no contiene user_id")
+            raise HTTPException(status_code=401, detail="Token inválido")
+        
+        logger.info(f"✅ Token válido para user_id: {user_id}")
+        return user_id
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error al verificar token: {str(e)}")
-        raise HTTPException(status_code=401, detail="Token inválido")
+        logger.error(f"❌ Error al verificar token: {str(e)}")
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+
+# ===== RUTAS DE TAREAS =====
 
 @app.get("/tasks", response_model=List[Task])
-def get_tasks(completed: Optional[bool] = None, priority: Optional[str] = None, authorization: Optional[str] = Header(None)):
-    user_id = get_user_id_from_token(authorization)
+def get_tasks(
+    completed: Optional[bool] = None, 
+    priority: Optional[str] = None,
+    user_id: int = Depends(get_user_id_from_token)
+):
     return get_tasks_route(user_id, completed, priority)
 
 @app.post("/tasks", response_model=Task)
-def create_task(task: TaskCreate, authorization: Optional[str] = Header(None)):
-    user_id = get_user_id_from_token(authorization)
-    return create_task_route(user_id, task)
+def create_task(
+    task: TaskCreate,
+    user_id: int = Depends(get_user_id_from_token)
+):
+    try:
+        logger.info(f"📝 Creando tarea para user_id: {user_id}")
+        result = create_task_route(user_id, task)
+        logger.info(f"✅ Tarea creada exitosamente")
+        return result
+    except Exception as e:
+        logger.error(f"❌ Error al crear tarea: {str(e)}")
+        raise
 
 @app.get("/tasks/{task_id}", response_model=Task)
-def get_task(task_id: int, authorization: Optional[str] = Header(None)):
-    user_id = get_user_id_from_token(authorization)
+def get_task(
+    task_id: int,
+    user_id: int = Depends(get_user_id_from_token)
+):
     return get_task_route(user_id, task_id)
 
 @app.put("/tasks/{task_id}", response_model=Task)
-def update_task(task_id: int, task: TaskUpdate, authorization: Optional[str] = Header(None)):
-    user_id = get_user_id_from_token(authorization)
+def update_task(
+    task_id: int, 
+    task: TaskUpdate,
+    user_id: int = Depends(get_user_id_from_token)
+):
     return update_task_route(user_id, task_id, task)
 
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id: int, authorization: Optional[str] = Header(None)):
-    user_id = get_user_id_from_token(authorization)
+def delete_task(
+    task_id: int,
+    user_id: int = Depends(get_user_id_from_token)
+):
     return delete_task_route(user_id, task_id)
 
 # ===== RUTAS DE AUTENTICACIÓN =====
