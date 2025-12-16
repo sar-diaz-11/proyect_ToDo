@@ -162,27 +162,31 @@ def fix_database():
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Arreglar la columna completed para que tenga valor por defecto FALSE
+        # Primero actualizar todos los NULL a FALSE
+        cursor.execute("UPDATE tasks SET completed = FALSE WHERE completed IS NULL")
+        cursor.execute("UPDATE tasks SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+        cursor.execute("UPDATE tasks SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL")
+        
+        # Ahora modificar las columnas
         cursor.execute("""
             ALTER TABLE tasks 
             MODIFY COLUMN completed BOOLEAN NOT NULL DEFAULT FALSE
         """)
         
-        # También arreglar created_at y updated_at si tienen NULL
         cursor.execute("""
             ALTER TABLE tasks 
-            MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            MODIFY COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         """)
         
         cursor.execute("""
             ALTER TABLE tasks 
-            MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            MODIFY COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         """)
         
         connection.commit()
         cursor.close()
         connection.close()
         
-        return {"message": "Columnas arregladas exitosamente"}
+        return {"message": "Base de datos completamente arreglada"}
     except Exception as e:
         return {"error": str(e)}
