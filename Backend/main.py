@@ -152,3 +152,26 @@ def verify_user_token_endpoint(token: str):
     except Exception as e:
         logger.error(f"❌ Error en verificación de token: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/fix-database")
+def fix_database():
+    """Endpoint temporal para arreglar la tabla tasks"""
+    try:
+        from database import get_db_connection
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Arreglar la tabla tasks
+        cursor.execute("""
+            ALTER TABLE tasks 
+            MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
+        """)
+        
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
+        return {"message": "Base de datos arreglada exitosamente"}
+    except Exception as e:
+        return {"error": str(e)}
