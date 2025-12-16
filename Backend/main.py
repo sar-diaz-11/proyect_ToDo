@@ -162,7 +162,10 @@ def fix_database():
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Arreglar la tabla tasks
+        # Primero eliminar la PRIMARY KEY existente
+        cursor.execute("ALTER TABLE tasks DROP PRIMARY KEY")
+        
+        # Ahora agregar AUTO_INCREMENT y PRIMARY KEY
         cursor.execute("""
             ALTER TABLE tasks 
             MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
