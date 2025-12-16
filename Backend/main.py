@@ -162,19 +162,27 @@ def fix_database():
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Primero eliminar la PRIMARY KEY existente
-        cursor.execute("ALTER TABLE tasks DROP PRIMARY KEY")
-        
-        # Ahora agregar AUTO_INCREMENT y PRIMARY KEY
+        # Arreglar la columna completed para que tenga valor por defecto FALSE
         cursor.execute("""
             ALTER TABLE tasks 
-            MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
+            MODIFY COLUMN completed BOOLEAN NOT NULL DEFAULT FALSE
+        """)
+        
+        # También arreglar created_at y updated_at si tienen NULL
+        cursor.execute("""
+            ALTER TABLE tasks 
+            MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """)
+        
+        cursor.execute("""
+            ALTER TABLE tasks 
+            MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         """)
         
         connection.commit()
         cursor.close()
         connection.close()
         
-        return {"message": "Base de datos arreglada exitosamente"}
+        return {"message": "Columnas arregladas exitosamente"}
     except Exception as e:
         return {"error": str(e)}
